@@ -14,7 +14,7 @@ ANSIBLE_FILES_DIR="$(dirname "$0")"
 INVENTORY="${1:-${ANSIBLE_FILES_DIR}/inventory.yml}"
 
 echo -n ">> Checking inventory file (${INVENTORY}) exists and is readable... "
-[ -r "${INVENTORY}" ]; handle_error "Please check https://github.com/w3f/polkadot-secure-validator/blob/master/GUIDE_ANSIBLE.md#inventory"
+[ -r "${INVENTORY}" ]; handle_error "Please check the GUIDE_ANSIBLE.md#inventory section in this repository."
 
 echo -n ">> Pulling upstream changes... "
 out=$((git pull origin master) 2>&1)

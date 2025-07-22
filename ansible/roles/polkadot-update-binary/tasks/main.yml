@@ -7,29 +7,60 @@
 
 - name: download polkadot binary
   get_url:
-    url: '{{ polkadot_binary_url | quote }}'
-    checksum: '{{ polkadot_binary_checksum | quote }}'
+    url: "{{ polkadot_binary_url | quote }}"
+    checksum: "{{ polkadot_binary_checksum | quote }}"
     dest: /usr/local/bin/polkadot-new
     force: true
-    mode: '0700'
-    owner: 'polkadot'
-    group: 'polkadot'
+    mode: "0700"
+    owner: "polkadot"
+    group: "polkadot"
   when: polkadot_sha256.stdout != polkadot_binary_checksum
 
+- name: get currently polkadot-execute-worker sha256
+  shell: |
+    sha256sum /usr/libexec/polkadot-execute-worker | sed -n 's/^\(\S*\).*/sha256:\1/p'
+  args:
+    executable: /bin/bash
+  register: execute_worker_sha256
+
+- name: download polkadot-execute-worker binary
+  get_url:
+    url: "{{ polkadot_execute_worker_url | quote }}"
+    checksum: "{{ polkadot_execute_worker_checksum | quote }}"
+    dest: /usr/libexec/polkadot-execute-worker-new
+    force: true
+    mode: "0700"
+    owner: "polkadot"
+    group: "polkadot"
+  when: execute_worker_sha256.stdout != polkadot_execute_worker_checksum
+
+- name: get currently polkadot-prepare-worker sha256
+  shell: |
+    sha256sum /usr/libexec/polkadot-prepare-worker | sed -n 's/^\(\S*\).*/sha256:\1/p'
+  args:
+    executable: /bin/bash
+  register: prepare_worker_sha256
+
+- name: download polkadot-prepare-worker binary
+  get_url:
+    url: "{{ polkadot_prepare_worker_url | quote }}"
+    checksum: "{{ polkadot_prepare_worker_checksum | quote }}"
+    dest: /usr/libexec/polkadot-prepare-worker-new
+    force: true
+    mode: "0700"
+    owner: "polkadot"
+    group: "polkadot"
+  when: prepare_worker_sha256.stdout != polkadot_prepare_worker_checksum
 
 - name: stop polkadot service
   systemd:
     name: polkadot.service
     state: stopped
     daemon_reload: yes
-  tags: molecule-idempotence-notest
-  
-
 
 - name: substitute new polkadot binary
   shell: |
     set -o pipefail
-
     if [ -f /usr/local/bin/polkadot-new ]; then
       cp /usr/local/bin/polkadot-new /usr/local/bin/polkadot
       chown polkadot:polkadot /usr/local/bin/polkadot
@@ -38,9 +69,63 @@
   args:
     executable: /bin/bash
   changed_when: False
-  when: polkadot_sha256.stdout != polkadot_binary_checksum
 
+- name: substitute new polkadot-execute-worker binary
+  shell: |
+    set -o pipefail
+    if [ -f /usr/libexec/polkadot-execute-worker-new ]; then
+      cp /usr/libexec/polkadot-execute-worker-new /usr/libexec/polkadot-execute-worker
+      chown polkadot:polkadot /usr/libexec/polkadot-execute-worker
+      chmod 755 /usr/libexec/polkadot-execute-worker
+    fi
+  args:
+    executable: /bin/bash
+  changed_when: False
 
-- name: restart polkadot service
-  import_role:
-    name: polkadot-restart-service
+- name: substitute new polkadot-prepare-worker binary
+  shell: |
+    set -o pipefail
+    if [ -f /usr/libexec/polkadot-prepare-worker-new ]; then
+      cp /usr/libexec/polkadot-prepare-worker-new /usr/libexec/polkadot-prepare-worker
+      chown polkadot:polkadot /usr/libexec/polkadot-prepare-worker
+      chmod 755 /usr/libexec/polkadot-prepare-worker
+    fi
+  args:
+    executable: /bin/bash
+  changed_when: False
+
+# Ensure the directory for the node key exists
+- name: Ensure /etc/polkadot directory exists
+  file:
+    path: /etc/polkadot
+    state: directory
+    mode: "0755"
+    owner: polkadot
+    group: polkadot
+  become: true
+
+- name: Generate node key for Polkadot
+  command: "/usr/local/bin/polkadot key generate-node-key --file /etc/polkadot/node-key"
+  args:
+    creates: "/etc/polkadot/node-key"
+  register: node_key_generation
+  become: true
+
+- name: Set ownership and permissions for the node key
+  file:
+    path: /etc/polkadot/node-key
+    owner: polkadot
+    group: polkadot
+    mode: "0700" # Restricts access to only the polkadot user
+  become: true
+
+# Reload and start the service after changes
+- name: Reload systemd
+  command: systemctl daemon-reload
+  become: true
+
+- name: start polkadot service
+  systemd:
+    name: polkadot.service
+    state: started
+    enabled: yes

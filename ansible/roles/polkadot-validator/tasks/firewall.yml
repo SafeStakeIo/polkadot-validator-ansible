@@ -14,6 +14,12 @@
   command: ufw allow 22/tcp
   when: not ufw_status_result.stdout is search("22/tcp.*ALLOW IN.*Anywhere")
 
+- name: open wireguard port only for VPN subnet
+  command: ufw allow from {{ wireguard_allowed_network | default('10.0.0.0/24') }} to any port {{ wireguard_listen_port | default('51820') }} proto udp
+  when:
+    - wireguard_enabled | default(false) | bool
+    - not ufw_status_result.stdout is search(wireguard_listen_port | default('51820') ~ "/udp.*ALLOW IN.*Anywhere")
+
 - name: open node_exporter port
   command: ufw allow 9100/tcp
   when:

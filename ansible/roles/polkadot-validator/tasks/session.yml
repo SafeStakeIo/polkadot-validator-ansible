@@ -14,6 +14,21 @@
   register: keystore_files
   changed_when: False
 
+# New task: wait for RPC endpoint to be ready
+- name: Wait for polkadot RPC endpoint to be available
+  uri:
+    url: http://localhost:9944
+    method: "POST"
+    status_code: 200
+    body_format: json
+    body: |
+      { "jsonrpc":"2.0", "method":"system_health", "params":[], "id":1 }
+  register: rpc_check
+  until: rpc_check.status == 200
+  retries: 12
+  delay: 5
+  when: keystore_files.stdout == "0"
+  
 - name: initialize server keys
   import_role:
     name: polkadot-rotate-keys

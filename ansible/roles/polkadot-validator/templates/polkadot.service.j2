@@ -71,6 +71,10 @@ ExecStart=/usr/local/bin/polkadot \
   {{ additionalValidatorFlags }} \
   {% endif %}
   {# --- #}
+  --node-key-file /etc/polkadot/node-key \
+  --db-cache=32768 \
+  --in-peers=30 \
+  --out-peers=30 \
   --validator \
   --chain={{ chain }} \
   --listen-addr=/ip4/127.0.0.1/tcp/{{ p2p_port }} \

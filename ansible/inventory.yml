@@ -7,6 +7,9 @@
 # NOTE: optional variables can just be removed.
 [validator_0:vars]
 ansible_user=alice
+wireguard_address=10.0.0.2/24
+wireguard_listen_port=51820
+
 # Set an individual node name (optional)
 node_name='Alice_Validator'
 # Setup one or multiple telemetry endpoints (optional)
@@ -18,7 +21,7 @@ logging_filter='sync=warn,afg=warn,babe=warn'
 # Setup a nginx reverse proxy in front of the binary (optional). Disabled by default.
 enable_reverse_proxy = false
 # Any additional flags passed on to the 'polkadot' binary (optional)
-additional_flags = '--no-prometheus --no-mdns'
+additional_flags = '--no-prometheus --no-mdns --workers-path=/usr/libexec --state-pruning=1000 --sync=warp'
 
 # Validator 1
 [validator_1]
@@ -26,6 +29,9 @@ additional_flags = '--no-prometheus --no-mdns'
 
 [validator_1:vars]
 ansible_user=bob
+wireguard_address=10.0.0.3/24
+wireguard_listen_port=51820
+
 telemetry_url=wss://telemetry.polkadot.io/submit/
 logging_filter='sync=warn,afg=warn,babe=warn'
 
@@ -39,14 +45,26 @@ validator_1
 # Project name. Will be used as a prefix for the auto-generated node names
 # if an individual `nodeName` is not specified.
 project=alice-in-wonderland
+wireguard_enabled=true
+wireguard_allowed_network=10.0.0.0/24
+
 
 # Can be left as is.
 ansible_ssh_common_args='-o StrictHostKeyChecking=no -o ConnectTimeout=15'
 build_dir=$HOME/.config/polkadot-secure-validator/build/w3f/ansible
 
 # Specify which `polkadot` binary to install. Checksum is verified during execution.
-polkadot_binary_url='https://github.com/paritytech/polkadot/releases/download/v0.9.1/polkadot'
-polkadot_binary_checksum='sha256:00185307376ca0bacf28504e76d4c61ebf84abfba6c31780c9966325add83e1e'
+# For Polkadot binary
+polkadot_binary_url='https://github.com/paritytech/polkadot-sdk/releases/download/polkadot-stable2503-7/polkadot'
+polkadot_binary_checksum='sha256:5c1dfa939fdc70112f9bbbfaa92d9dfbe31e5a4a576b940c0ce523c24b1730b8'
+
+# For Polkadot Execute Worker binary
+polkadot_execute_worker_url='https://github.com/paritytech/polkadot-sdk/releases/download/polkadot-stable2503-7/polkadot-execute-worker'
+polkadot_execute_worker_checksum='sha256:672a1b968bd50f2ada1e6d4db572c334d5ca0a9ef8d6e6f77faf7cfc08296220'
+
+# For Polkadot Prepare Worker binary
+polkadot_prepare_worker_url='https://github.com/paritytech/polkadot-sdk/releases/download/polkadot-stable2503-7/polkadot-prepare-worker'
+polkadot_prepare_worker_checksum='sha256:af7354c9382b27f63a51a8e5185b0bfc765b9e0c662ce184393e916a2417a067'
 
 # Specify the chain/network.
 #

@@ -1,27 +1,83 @@
 ---
+- name: Bootstrap OS and prerequisites
+  hosts: all
+  gather_facts: yes
+  tasks:
+    - name: Print detected OS info (debug)
+      debug:
+        msg: "OS family: {{ ansible_os_family }}, Distribution: {{ ansible_distribution }} {{ ansible_distribution_version }}"
+
+    - name: Fail if OS is not supported (Phase 1)
+      fail:
+        msg: "This playbook currently supports only Debian 12, Ubuntu 22.04, Ubuntu 24.04, AlmaLinux 10, and RHEL 10"
+      when: >
+        (ansible_distribution not in ['Debian', 'Ubuntu', 'AlmaLinux', 'RedHat', 'Red Hat Enterprise Linux']) or
+        (ansible_distribution == 'Debian' and ansible_distribution_major_version != "12") or
+        (ansible_distribution == 'Ubuntu' and ansible_distribution_major_version not in ["22", "24"]) or
+        (ansible_distribution == 'AlmaLinux' and ansible_distribution_major_version != "10") or
+        (ansible_distribution in ['RedHat', 'Red Hat Enterprise Linux'] and ansible_distribution_major_version != "10")
+
+    - name: Ensure sudo is installed (Debian/Ubuntu)
+      apt:
+        name: sudo
+        state: present
+        update_cache: yes
+      when: ansible_os_family == 'Debian'
+
+    - name: Ensure sudo is installed (RHEL/AlmaLinux)
+      yum:
+        name: sudo
+        state: present
+        update_cache: yes
+      when: ansible_os_family == 'RedHat'
+
+    - name: Ensure ufw is installed (Debian/Ubuntu)
+      apt:
+        name: ufw
+        state: present
+        update_cache: yes
+      when: ansible_os_family == 'Debian'
+
+    - name: Ensure firewalld is installed and enabled (RHEL/AlmaLinux)
+      yum:
+        name: firewalld
+        state: present
+        update_cache: yes
+      when: ansible_os_family == 'RedHat'
+
+    - name: Ensure firewalld is running and enabled (RHEL/AlmaLinux)
+      systemd:
+        name: firewalld
+        state: started
+        enabled: yes
+      when: ansible_os_family == 'RedHat'
+
+- name: Preflight: Check sudo privileges
+  hosts: all
+  gather_facts: no
+  tasks:
+    - name: Ensure ansible_user has sudo privileges
+      command: sudo -n true
+      register: sudo_check
+      ignore_errors: yes
+
+    - name: Abort if user does not have sudo
+      fail:
+        msg: "The user {{ ansible_user }} must have passwordless sudo privileges!"
+      when: sudo_check.rc != 0
+
 - name: Wait for system ready
   hosts: all
   gather_facts: no
   tasks:
-  - name: Wait for nodes to become reachable
-    wait_for_connection:
+    - name: Wait for nodes to become reachable
+      wait_for_connection:
 
 - name: validator
   hosts: validator
   become: yes
   roles:
-  - polkadot-validator
-
-- name: nginx-auth
-  hosts: validator
-  become: yes
-  strategy: free
-  roles:
-  - nginx-auth  
-
-- name: node-exporter
-  hosts: validator
-  become: yes
-  strategy: free
-  roles:
-  - { role: node-exporter, when: node_exporter_enabled|bool }
+    - polkadot-validator
+    - { role: nginx-auth, strategy: free }
+    - { role: node-exporter, strategy: free, when: node_exporter_enabled|bool }
+    - { role: wireguard, when: wireguard_enabled|default(false)|bool }

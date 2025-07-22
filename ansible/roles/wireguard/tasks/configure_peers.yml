@@ -1,0 +1,57 @@
+---
+- name: Build WireGuard peers list from inventory
+  set_fact:
+    wireguard_peers: |
+      {{
+        groups['validator']
+        | difference([inventory_hostname])
+        | map('extract', hostvars)
+        | map('combine', [{'address': item.wireguard_address, 'public_key': item.wireguard_public_key, 'listen_port': item.wireguard_listen_port | default('51820')}])
+        | list
+      }}
+  vars:
+    item: "{{ item }}"
+  loop: "{{ groups['validator'] | difference([inventory_hostname]) }}"
+  when: hostvars[item].wireguard_public_key is defined
+
+- name: Template WireGuard config (wg0.conf)
+  template:
+    src: wg0.conf.j2
+    dest: /etc/wireguard/wg0.conf
+    owner: root
+    group: root
+    mode: 0600
+  vars:
+    wireguard_private_key: "{{ lookup('file', '/etc/wireguard/privatekey') }}"
+    wireguard_address: "{{ wireguard_address }}"
+    wireguard_listen_port: "{{ wireguard_listen_port | default('51820') }}"
+    wireguard_peers: "{{ wireguard_peers }}"
+    wireguard_allowed_network: "{{ wireguard_allowed_network }}"
+
+- name: Open WireGuard port (UFW)
+  ufw:
+    rule: allow
+    port: "{{ wireguard_listen_port | default('51820') }}"
+    proto: udp
+    from_ip: "{{ wireguard_allowed_network }}"
+  when:
+    - ansible_os_family == "Debian"
+    - wireguard_allowed_network is defined
+
+- name: Open WireGuard port (firewalld)
+  firewalld:
+    port: "{{ wireguard_listen_port | default('51820') }}/udp"
+    source: "{{ wireguard_allowed_network }}"
+    permanent: yes
+    state: enabled
+    immediate: yes
+  when:
+    - ansible_os_family == "RedHat"
+    - wireguard_allowed_network is defined
+
+- name: Ensure WireGuard service is up (wg-quick@wg0)
+  systemd:
+    name: wg-quick@wg0
+    state: started
+    enabled: yes
+    daemon_reload: yes

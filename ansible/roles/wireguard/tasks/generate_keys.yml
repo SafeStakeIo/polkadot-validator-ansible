@@ -1,0 +1,65 @@
+---
+- name: Install WireGuard packages (Debian/Ubuntu)
+  apt:
+    name:
+      - wireguard
+      - wireguard-tools
+    state: present
+    update_cache: yes
+  when: ansible_os_family == "Debian"
+
+- name: Install WireGuard packages (RHEL/AlmaLinux)
+  yum:
+    name: wireguard-tools
+    state: present
+    update_cache: yes
+  when: ansible_os_family == "RedHat"
+
+- name: Ensure /etc/wireguard directory exists
+  file:
+    path: /etc/wireguard
+    state: directory
+    owner: root
+    group: root
+    mode: 0700
+
+- name: Generate WireGuard private key if missing
+  command: wg genkey
+  register: wg_private_key
+  args:
+    creates: /etc/wireguard/privatekey
+
+- name: Save WireGuard private key to file
+  copy:
+    content: "{{ wg_private_key.stdout }}"
+    dest: /etc/wireguard/privatekey
+    owner: root
+    group: root
+    mode: 0600
+  when: wg_private_key is defined
+
+- name: Generate WireGuard public key if missing
+  shell: "cat /etc/wireguard/privatekey | wg pubkey"
+  register: wg_public_key
+  args:
+    creates: /etc/wireguard/publickey
+  when: wg_private_key is defined
+
+- name: Save WireGuard public key to file
+  copy:
+    content: "{{ wg_public_key.stdout }}"
+    dest: /etc/wireguard/publickey
+    owner: root
+    group: root
+    mode: 0644
+  when: wg_public_key is defined
+
+- name: Read public key for current host and set as fact
+  slurp:
+    src: /etc/wireguard/publickey
+  register: wg_publickey_file
+
+- name: Set host fact for wireguard_public_key
+  set_fact:
+    wireguard_public_key: "{{ wg_publickey_file['content'] | b64decode | trim }}"
+    cacheable: yes
