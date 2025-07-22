@@ -1,4 +1,5 @@
 # polkadot-validator-ansible
+
 > **Note:** This repository only covers application-layer configuration. Platform provisioning and cloud infrastructure automation (as found in the original source) are not included. You must supply a pre-installed Linux system.
 
 **Modern Ansible automation for Polkadot/Kusama validator deployment on Linux.**
@@ -8,7 +9,7 @@ This project provides application-layer Ansible playbooks and roles for installi
 ## What This Repo Is
 
 - **Purpose:** Simplifies and modernizes the validator setup process.
-- **Scope:** *Application layer only* (no infrastructure/platform automation).
+- **Scope:** _Application layer only_ (no infrastructure/platform automation).
 - **OS Support (Phased):**
   - **Phase 1:** Debian 12, Ubuntu 22.04, Ubuntu 24.04
   - **Phase 2:** AlmaLinux 10, RHEL 10
@@ -18,7 +19,7 @@ This project provides application-layer Ansible playbooks and roles for installi
 - Automatic OS detection (runs the right playbook/roles for your OS)
 - Polkadot/Kusama binary download & installation (version easily updatable)
 - SMT (Hyperthreading) disablement for single-threaded operation
-- WireGuard VPN provisioning & setup
+- WireGuard VPN provisioning & setup (future)
 - Idempotent: can be run multiple times without side effects
 - Designed for modern Linux (systemd-based) environments
 
@@ -38,3 +39,4 @@ This project provides application-layer Ansible playbooks and roles for installi
 ```bash
 # Example coming soon: Run Ansible playbook after editing inventory file
 ansible-playbook -i inventory.yml site.yml
+```

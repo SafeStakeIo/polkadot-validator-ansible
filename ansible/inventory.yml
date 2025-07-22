@@ -7,8 +7,6 @@
 # NOTE: optional variables can just be removed.
 [validator_0:vars]
 ansible_user=alice
-wireguard_address=10.0.0.2/24
-wireguard_listen_port=51820
 
 # Set an individual node name (optional)
 node_name='Alice_Validator'
@@ -29,8 +27,6 @@ additional_flags = '--no-prometheus --no-mdns --workers-path=/usr/libexec --stat
 
 [validator_1:vars]
 ansible_user=bob
-wireguard_address=10.0.0.3/24
-wireguard_listen_port=51820
 
 telemetry_url=wss://telemetry.polkadot.io/submit/
 logging_filter='sync=warn,afg=warn,babe=warn'
@@ -45,9 +41,6 @@ validator_1
 # Project name. Will be used as a prefix for the auto-generated node names
 # if an individual `nodeName` is not specified.
 project=alice-in-wonderland
-wireguard_enabled=true
-wireguard_allowed_network=10.0.0.0/24
-
 
 # Can be left as is.
 ansible_ssh_common_args='-o StrictHostKeyChecking=no -o ConnectTimeout=15'

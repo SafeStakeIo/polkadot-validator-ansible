@@ -1,7 +1,7 @@
 ---
 - name: install nginx package
   apt:
-    name: nginx
+    name: nginx-extras
     state: present
     update_cache: yes
 

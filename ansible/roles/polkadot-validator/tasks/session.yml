@@ -28,7 +28,7 @@
   retries: 12
   delay: 5
   when: keystore_files.stdout == "0"
-  
+
 - name: initialize server keys
   import_role:
     name: polkadot-rotate-keys
